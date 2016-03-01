@@ -183,7 +183,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                         }
                         else if(x - otp2.time > 300000)
                         {
-                          res.json({success:false,message:'OTP Expired', date:typeof Date.now(), exp:typeof otp2.time,res:x-otp2.time});
+                          res.json({success:false,message:'OTP Expired'});
                         }
 
                         else if(req.body.otp == otp2.otp)
@@ -202,7 +202,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                         }
 
                         else{
-                          res.json({success:false, message:"otp not matching", a:req.body.otp, b:otp2.otp});
+                          res.json({success:false, message:"otp not matching"});
                         }
 
                       });
