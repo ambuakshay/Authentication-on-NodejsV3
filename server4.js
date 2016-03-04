@@ -186,7 +186,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                           res.json({success:false,message:'OTP Expired', date:typeof Date.now(), exp:typeof otp2.time,res:x-otp2.time});
                         }
 
-                        else if(req.body.otp == otp2.otp.slice(0,otp2.otp.length-1))
+                        else if(req.body.otp == otp2.otp)
                         {
                           var token = jwt.sign(user, app.get('superSecret'), {
                                           expiresInMinutes: 1440 // expires in 24 hours
