@@ -74,18 +74,18 @@ setupRoute.use(function(req,res,next){
 setupRoute.post('/signup', function(req, res) {
             if(validateUserName(req.body.name)){
 
-              if(validatePwd(req.body.password)){
-                password(req.body.password).hash(function(error,hash){
+              //if(validatePwd(req.body.password)){
+              //  password(req.body.password).hash(function(error,hash){
                 //console.log(req.body.password);
-                if(error)
-                  throw new Error("Something went wrong");
-                else
-                {
-                  myuser = hash;
+               /* if(error)
+                  throw new Error("Something went wrong");*/
+               /* else
+                {*/
+                //  myuser = hash;
 
                   var nick = new User({ 
                   name: req.body.name, 
-                  password: myuser,
+                //  password: myuser,
                   admin: true 
                 });
                   var options = {
@@ -134,15 +134,15 @@ setupRoute.post('/signup', function(req, res) {
                   });
 
                   //console.log("here"+myuser);
-                  }
-                });
+                  //}
+               // });
               //console.log(myuser);
                 // create a sample user
 
-              }
+              /*}
               else{
                 res.json({ password:"False"});
-              }
+              }*/
             }
             else{
               res.json({username:"False"});
@@ -183,10 +183,10 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                         }
                         else if(x - otp2.time > 300000)
                         {
-                          res.json({success:false,message:'OTP Expired'});
+                          res.json({success:false,message:'OTP Expired', date:typeof Date.now(), exp:typeof otp2.time,res:x-otp2.time});
                         }
 
-                        else if(req.body.otp == otp2.otp)
+                        else if(req.body.otp == otp2.otp.slice(0,otp2.otp.length-1))
                         {
                           var token = jwt.sign(user, app.get('superSecret'), {
                                           expiresInMinutes: 1440 // expires in 24 hours
@@ -202,7 +202,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                         }
 
                         else{
-                          res.json({success:false, message:"otp not matching"});
+                          res.json({success:false, message:"otp not matching", a:req.body.otp, b:otp2.otp});
                         }
 
                       });
