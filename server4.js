@@ -34,7 +34,7 @@ app.use(morgan('dev'));
 /*app.get('/', function(req, res) {
   //for(var i=0;i<1000000000;i++);
   var port1 = 9838;
-  var host = 'localhost';
+  var host = '10.10.20.134';
   var socket = new JsonSocket(new net.Socket());
   socket.connect(port1,host);
   socket.on('connect',function(){
@@ -46,24 +46,18 @@ app.use(morgan('dev'));
     
 });*/
 
-
+//to do
 function validateUserName(uName){
   return true;
 }
 
-function validatePwd(pwd){
-  return true;
-}
 
 //for registration..... the post request for it.
 var setupRoute = express.Router();
 
 setupRoute.use(function(req,res,next){
-  if(!validateUserName(req.body.name)){
+  if(!validateUserName(req.body.phone_number)){
     res.json({success: false,message: 'Setup Failed. Enter Valid Username'});
-  }
-  else if(!validatePwd(req.body.password)){
-    res.json({succes:false,message: 'Setup Failed. Enter a password'});
   }
   else
   {
@@ -72,7 +66,7 @@ setupRoute.use(function(req,res,next){
 });
 
 setupRoute.post('/signup', function(req, res) {
-            if(validateUserName(req.body.name)){
+            if(validateUserName(req.body.phone_number)){
 
               //if(validatePwd(req.body.password)){
               //  password(req.body.password).hash(function(error,hash){
@@ -84,23 +78,23 @@ setupRoute.post('/signup', function(req, res) {
                 //  myuser = hash;
 
                   var nick = new User({ 
-                  name: req.body.name, 
+                  phone_number: req.body.phone_number
                 //  password: myuser,
-                  admin: true 
+  
                 });
                   var options = {
-                        args: [req.body.name]
+                        args: [req.body.phone_number]
                       };
                        
                       PythonShell.run('./something.py',options, function (err, results) {
                         if (err) throw err;
                         // results is an array consisting of messages collected during execution 
 
-                        OTP1.findOne({name:req.body.name},function(err,otp3){
+                        OTP1.findOne({phone_number:req.body.phone_number},function(err,otp3){
                               if(!otp3){
                                 console.log('results: %j', results);
                                 var otp1 = new OTP1({
-                                  name: req.body.name,
+                                  phone_number: req.body.phone_number,
                                   otp: results,
                                   time:Date.now()
                                 });
@@ -164,7 +158,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
 
   // find the user
    User.findOne({
-                name: req.body.name
+                phone_number: req.body.phone_number
                 }, function(err, user) {
 
                     if (err) throw err;
@@ -174,7 +168,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                     } else if (user) {
 
                       // check if OTP matches
-                      OTP1.findOne({name:req.body.name},function(err,otp2){
+                      OTP1.findOne({phone_number:req.body.phone_number},function(err,otp2){
                         var x = new Date();
                         if(err) throw err;
                         
@@ -183,10 +177,10 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                         }
                         else if(x - otp2.time > 300000)
                         {
-                          res.json({success:false,message:'OTP Expired', date:typeof Date.now(), exp:typeof otp2.time,res:x-otp2.time});
+                          res.json({success:false,message:'OTP Expired'});
                         }
 
-                        else if(req.body.otp == otp2.otp)
+                        else if(req.body.otp == otp2.otp.slice(0,otp2.otp.length-1))
                         {
                           var token = jwt.sign(user, app.get('superSecret'), {
                                           expiresInMinutes: 1440 // expires in 24 hours
@@ -196,7 +190,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                                       res.json({
                                         success: true,
                                         message: 'Enjoy your token!',
-                                        user: req.body.name,
+                                        user: req.body.phone_number,
                                         token: token
                                       });
                         }
@@ -244,7 +238,100 @@ apiRoutes.use(function(req, res, next) {
   }   
 });
 
-//route to send OTP
+//pinging to update IP of a client
+
+apiRoutes.post('/update_ip', function(req, res) {
+
+              User.findOne({
+                phone_number: req.body.phone_number
+                }, function(err, user) {
+
+                    if (err) throw err;
+
+                    if (!user) {
+                        res.json({ success: false, message: 'Invalid User.' });
+                    }
+                    else
+                    {
+                      user["ip_address"] = req.body.ip_address;
+                      user["port"] = req.body.port;
+                      user["active"] = true;
+                      user["last_updated_time"] = Date.now();
+                      user.save(function(err){
+                                  if(err) throw err;
+                                  console.log("IP Updated");
+                                })
+                      res.json({success:true,message:"IP Updated successfully"});
+                    }
+                  });
+
+});
+
+apiRoutes.post('/call', function(req, res) {
+
+    User.findOne({
+                phone_number: req.body.from_phone_number
+                }, function(err, user) {
+
+                    if (err) throw err;
+
+                    if (!user) {
+                        res.status(401).send('Unauthorized');
+                    }   
+                    else{
+                       User.findOne({
+                          phone_number: req.body.to_phone_number
+                          }, function(err, user1) {
+
+                                  if (err) throw err;
+
+                                  if (!user1) {
+                                      res.status(404).send('Not Found');
+                                  }
+                                  else
+                                  {
+                                      port1 = user1.port;
+                                      host = user1.ip_address;
+                                      var socket = new JsonSocket(new net.Socket());
+                                      socket.connect(port1,host);
+                
+                                      if(user1["active"])
+                                      {
+                                          socket.on('connect',function(){
+                                    
+                                          socket.sendMessage("TYPE_INCOMING_CALL:" + user.phone_number +"#!");
+                                          socket.on('data',function(message){
+                                            //res.json({a:message});
+                                            console.log(message.toString("utf8"));
+                                            m = message.toString("utf8").split(":");
+                                            if(m[0]=="0")
+                                            {
+                                              res.json({success:false,message:"Client Busy"});
+                                            }
+                                            else
+                                            {
+                                              res.json({success:true,ip_address: user1.ip_address,port:m[1]});
+                                            }
+                                          });
+                                        });
+                                        socket.on("error",function(){
+                                          user1["active"] = false; 
+                                          user1.save(function(err){
+                                                if(err) throw err;
+                                              });
+                                          res.json({success:false,message:"User not Reachable"});  
+                                        });
+                                    }
+                                    else
+                                    {
+                                       res.json({success:false,message:"User not Reachable"});
+                                    }  
+                                }
+                            });
+                        }
+                    });
+
+});
 
 
 
