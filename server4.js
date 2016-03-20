@@ -28,31 +28,12 @@ app.use(morgan('dev'));
 // =======================
 // routes ================
 // =======================
-// basic route
 
-
-/*app.get('/', function(req, res) {
-  //for(var i=0;i<1000000000;i++);
-  var port1 = 9838;
-  var host = '10.10.20.134';
-  var socket = new JsonSocket(new net.Socket());
-  socket.connect(port1,host);
-  socket.on('connect',function(){
-    socket.sendMessage({a:'hi'});
-    socket.on('message',function(message){
-      res.send(message['b']+' serverA');
-    })
-  })
-    
-});*/
-
-//to do
 function validateUserName(uName){
   return true;
 }
 
-
-//for registration..... the post request for it.
+//for registration of user
 var setupRoute = express.Router();
 
 setupRoute.use(function(req,res,next){
@@ -66,95 +47,56 @@ setupRoute.use(function(req,res,next){
 });
 
 setupRoute.post('/signup', function(req, res) {
-            if(validateUserName(req.body.phone_number)){
 
-              //if(validatePwd(req.body.password)){
-              //  password(req.body.password).hash(function(error,hash){
-                //console.log(req.body.password);
-               /* if(error)
-                  throw new Error("Something went wrong");*/
-               /* else
-                {*/
-                //  myuser = hash;
-
-                  var nick = new User({ 
-                  phone_number: req.body.phone_number
-                //  password: myuser,
-  
-                });
-                  var options = {
-                        args: [req.body.phone_number]
-                      };
-                       
-                      PythonShell.run('./something.py',options, function (err, results) {
-                        if (err) throw err;
-                        // results is an array consisting of messages collected during execution 
-
-                        OTP1.findOne({phone_number:req.body.phone_number},function(err,otp3){
-                              if(!otp3){
-                                console.log('results: %j', results);
-                                var otp1 = new OTP1({
-                                  phone_number: req.body.phone_number,
-                                  otp: results,
-                                  time:Date.now()
-                                });
-                               console.log(otp1.otp);
-                                otp1.save(function(err){
-                                  if(err) throw err;
-                                  console.log("otp saved");
-                                });
-                              }
-                              else{
-                                console.log('results: %j', results);
-                                otp3['otp']=results;
-                                otp3['time']=Date.now();
-                                console.log(otp3.otp);
-                                otp3.save(function(err){
-                                  if(err) throw err;
-                                  console.log("otp saved");
-                                });
-                              }
-                        })
-                        
-                        
-                      });
-               // console.log('User ')
-                // save the sample user
-                nick.save(function(err) {
-                  if (err) throw err;
-
-                  console.log('User saved successfully');
-                  res.json({ success: true });
-                  });
-
-                  //console.log("here"+myuser);
-                  //}
-               // });
-              //console.log(myuser);
-                // create a sample user
-
-              /*}
-              else{
-                res.json({ password:"False"});
-              }*/
-            }
-            else{
-              res.json({username:"False"});
-            }
-
- 
+                          var user = new User({ 
+                              phone_number: req.body.phone_number  
+                            });
+                          var options = {
+                                args: [req.body.phone_number]
+                              };    
+                          PythonShell.run('./something.py',options, function (err, results) {
+                                if (err) throw err;
+                                OTP1.findOne({phone_number:req.body.phone_number},function(err,otp3){
+                                      if(!otp3){
+                                        console.log('results: %j', results);
+                                        var otp1 = new OTP1({
+                                          phone_number: req.body.phone_number,
+                                          otp: results,
+                                          time:Date.now()
+                                        });
+                                       console.log(otp1.otp);
+                                        otp1.save(function(err){
+                                          if(err) throw err;
+                                          console.log("otp saved");
+                                        });
+                                      }
+                                      else{
+                                        console.log('results: %j', results);
+                                        otp3['otp']=results;
+                                        otp3['time']=Date.now();
+                                        console.log(otp3.otp);
+                                        otp3.save(function(err){
+                                          if(err) throw err;
+                                          console.log("otp saved");
+                                        });
+                                      }
+                                });     
+                          });
+                        // save the user
+                        user.save(function(err) {
+                          if (err) throw err;
+                          console.log('User saved successfully');
+                          res.json({ success: true });
+                        });
 });
 
 
 app.use('/',setupRoute);
 // API ROUTES -------------------
-// we'll get to these in a second
 var apiRoutes = express.Router(); 
 
-// TODO: route to authenticate a user (POST http://localhost:8080/api/authenticate)
-
-// route to authenticate a user (POST http://localhost:8080/api/authenticate)
-apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
+// route to authenticate a user
+apiRoutes.post('/authenticate', function(req, res) { 
 
   // find the user
    User.findOne({
@@ -185,8 +127,6 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                           var token = jwt.sign(user, app.get('superSecret'), {
                                           expiresInMinutes: 1440 // expires in 24 hours
                                         });
-
-                                      // return the information including token as JSON
                                       res.json({
                                         success: true,
                                         message: 'Enjoy your token!',
@@ -196,7 +136,7 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
                         }
 
                         else{
-                          res.json({success:false, message:"otp not matching", a:req.body.otp, b:otp2.otp});
+                          res.json({success:false, message:"otp not matching"});
                         }
 
                       });
@@ -206,7 +146,6 @@ apiRoutes.post('/authenticate', function(req, res) { //console.log(req,res);
 
           });
 });
-// TODO: route middleware to verify a token
 apiRoutes.use(function(req, res, next) {
 
   // check header or url parameters or post parameters for token
@@ -241,7 +180,8 @@ apiRoutes.use(function(req, res, next) {
 //pinging to update IP of a client
 
 apiRoutes.post('/update_ip', function(req, res) {
-
+              //find the phone_number of the client in the database 
+              //and update its ip_address field to the new ip_address provided by the client.
               User.findOne({
                 phone_number: req.body.phone_number
                 }, function(err, user) {
@@ -266,9 +206,12 @@ apiRoutes.post('/update_ip', function(req, res) {
                   });
 
 });
-
+//route used to call a phone_number
 apiRoutes.post('/call', function(req, res) {
-
+    //Search the database to find the existance of to_phone_number
+    //if exists, check if he is active,
+    //if active, then send the ip_address of the to_phone_number to from_phone_number.
+    //else, Error handling cases.
     User.findOne({
                 phone_number: req.body.from_phone_number
                 }, function(err, user) {
@@ -335,14 +278,13 @@ apiRoutes.post('/call', function(req, res) {
 
 
 
-// route to return all users (GET http://localhost:8080/users)
+// route to return all users 
 apiRoutes.get('/users', function(req, res) {
   User.find({}, function(err, users) {
     res.json(users);
   });
 });   
 
-// apply the routes to our application with the prefix /api
 app.use('/', apiRoutes);
 
 
